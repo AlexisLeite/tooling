@@ -10,4 +10,4 @@ mcp, skills, documentos y ejecutables listos para usar, catalogados y versionado
 
 En esta primera versión, upm publica sobre los directorios conocidos de codex
 pero las próximas versiones podrían introducir concepto de adaptadores a otros
-agentes.
+agentes.# tooling
