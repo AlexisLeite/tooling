@@ -48,8 +48,12 @@ export async function updateCommand(config) {
 
     const previous = config.data.packages[update.name];
     const selection = normalizeSelection(previous.resources);
-    const packageDir = storePackageDir(update.name, update.latestVersion);
-    await downloadAndExtractPackage(pkg, packageDir);
+    const needsPackageFiles =
+      selection.commands.length > 0 || selection.skills.length > 0 || selection.manuals.length > 0;
+    if (needsPackageFiles) {
+      const packageDir = storePackageDir(update.name, update.latestVersion);
+      await downloadAndExtractPackage(pkg, packageDir);
+    }
 
     const installed = await installSelectedResources({
       packageName: update.name,

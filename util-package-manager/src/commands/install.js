@@ -31,8 +31,12 @@ export async function installCommand(config, name) {
   const selection = normalizeSelection(await selectResources(utilPackage, previousSelection));
   const diff = diffSelections(previousSelection, selection);
 
-  const packageDir = storePackageDir(name, version);
-  await downloadAndExtractPackage(pkg, packageDir);
+  const needsPackageFiles =
+    selection.commands.length > 0 || selection.skills.length > 0 || selection.manuals.length > 0;
+  if (needsPackageFiles) {
+    const packageDir = storePackageDir(name, version);
+    await downloadAndExtractPackage(pkg, packageDir);
+  }
 
   const selectedRemoved = emptySelection();
   for (const entry of diff.removed) {
