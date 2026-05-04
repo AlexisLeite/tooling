@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "package": "@focus.matters/console-monitor",
+  "resources": {
+    "commands": {
+      "cm": {
+        "bin": "cm",
+        "description": "Run arbitrary commands and expose their console output over TCP."
+      }
+    },
+    "mcpServers": {
+      "console-monitor": {
+        "command": "npx",
+        "args": ["-y", "@focus.matters/console-monitor", "mcp"],
+        "description": "Read and restart console processes launched with cm run."
+      }
+    },
+    "skills": {
+      "mcp-consumption": {
+        "path": "codex/skills/mcp-consumption",
+        "uses": ["mcp:console-monitor"],
+        "description": "Agent instructions for consuming the console-monitor MCP server."
+      }
+    },
+    "manuals": {
+      "tutorial": {
+        "path": "codex/manuals/tutorial.md",
+        "installPath": "docs/console-monitor/tutorial.md",
+        "description": "Tutorial for cm run, TCP usage, and MCP configuration."
+      }
+    }
+  }
+}
