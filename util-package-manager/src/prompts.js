@@ -24,7 +24,7 @@ export function defaultInitPaths() {
   const userHome = homedir();
   return {
     configTomlPath: resolve(userHome, ".codex", "config.toml"),
-    codexPath: resolve(userHome, ".codex")
+    codexPath: resolve(process.cwd(), ".codex")
   };
 }
 

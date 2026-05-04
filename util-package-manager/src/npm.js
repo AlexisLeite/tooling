@@ -16,7 +16,7 @@ function registryUrl(name) {
 export async function fetchPackageMetadata(name) {
   const response = await fetch(registryUrl(name), {
     headers: {
-      accept: "application/vnd.npm.install-v1+json, application/json"
+      accept: "application/json"
     }
   });
 
