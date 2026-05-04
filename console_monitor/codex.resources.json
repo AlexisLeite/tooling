@@ -17,14 +17,14 @@
     },
     "skills": {
       "mcp-consumption": {
-        "path": "codex/skills/mcp-consumption",
+        "path": "etc/skills/mcp-consumption",
         "uses": ["mcp:console-monitor"],
         "description": "Agent instructions for consuming the console-monitor MCP server."
       }
     },
     "manuals": {
       "tutorial": {
-        "path": "codex/manuals/tutorial.md",
+        "path": "etc/manuals/tutorial.md",
         "installPath": "docs/console-monitor/tutorial.md",
         "description": "Tutorial for cm run, TCP usage, and MCP configuration."
       }

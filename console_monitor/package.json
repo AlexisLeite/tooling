@@ -11,7 +11,7 @@
   "files": [
     "bin",
     "src",
-    "codex",
+    "etc",
     "codex.resources.json",
     "README.md"
   ],
