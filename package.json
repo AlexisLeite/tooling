@@ -1,0 +1,21 @@
+{
+  "name": "tooling",
+  "version": "1.0.0",
+  "description": "Este repositorio busca ser la base de trabajo para cualquier proyecto a futuro.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AlexisLeite/tooling.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AlexisLeite/tooling/issues"
+  },
+  "homepage": "https://github.com/AlexisLeite/tooling#readme"
+}
