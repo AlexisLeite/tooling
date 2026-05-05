@@ -36,7 +36,7 @@ Use `--cwd` when the command should run from another directory:
 cm run --cwd C:\Code\my-app -- pnpm dev
 ```
 
-Use `--port` to request a starting TCP port:
+Use `--port` to request a starting TCP port: 
 
 ```bash
 cm run --port 4010 -- pnpm dev
