@@ -8,9 +8,11 @@ function printUsage() {
       "Usage:",
       "  cm run [--port <number>] [--host <host>] [--cwd <path>] [--port-file <path>] -- <command> [args...]",
       "  cm run [--port <number>] [--host <host>] [--cwd <path>] [--port-file <path>] <command> [args...]",
+      "  cm mcp",
       "",
       "Commands:",
       "  run    Run a command and expose its console over TCP",
+      "  mcp    Start the console-monitor MCP server",
     ].join("\n")
   );
 }
@@ -22,11 +24,7 @@ if (command === "--help" || command === "-h" || !command) {
   process.exit(command ? 0 : 1);
 }
 
-if (command !== "run") {
-  console.error(`[cm] Unsupported command: ${command}`);
-  printUsage();
-  process.exit(1);
-} else {
+if (command === "run") {
   try {
     runConsoleMonitor(args);
   } catch (error) {
@@ -34,4 +32,16 @@ if (command !== "run") {
     printRunUsage();
     process.exit(1);
   }
+} else if (command === "mcp") {
+  try {
+    const { main } = await import("../src/mcp.js");
+    await main();
+  } catch (error) {
+    console.error(`[cm mcp] ${error.stack || error.message}`);
+    process.exit(1);
+  }
+} else {
+  console.error(`[cm] Unsupported command: ${command}`);
+  printUsage();
+  process.exit(1);
 }
