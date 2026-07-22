@@ -1,6 +1,6 @@
 {
   "name": "@focus.matters/console-monitor",
-  "version": "0.1.2",
+  "version": "0.1.15",
   "description": "Run and monitor long-lived console commands from agents over TCP and MCP.",
   "type": "module",
   "bin": {
@@ -12,27 +12,8 @@
     "bin",
     "src",
     "etc",
-    "codex.resources.json",
     "README.md"
   ],
-  "codex": {
-    "resourcesVersion": 1,
-    "manifest": "./codex.resources.json",
-    "summary": {
-      "commands": [
-        "cm"
-      ],
-      "mcpServers": [
-        "console-monitor"
-      ],
-      "skills": [
-        "mcp-consumption"
-      ],
-      "manuals": [
-        "tutorial"
-      ]
-    }
-  },
   "util-package": {
     "commands": {
       "cm": {

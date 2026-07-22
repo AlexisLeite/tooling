@@ -1,7 +1,7 @@
-import { mkdir, readFile, rm } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { createWriteStream } from "node:fs";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { pipeline } from "node:stream/promises";
 import * as tar from "tar";
 import semver from "semver";
@@ -72,9 +72,4 @@ export async function downloadAndExtractPackage(pkg, targetDir) {
   await rm(archivePath, { force: true });
 
   return targetDir;
-}
-
-export async function readPackageManifestFromExtracted(targetDir, manifestPath) {
-  const resolved = resolve(targetDir, manifestPath);
-  return JSON.parse(await readFile(resolved, "utf8"));
 }

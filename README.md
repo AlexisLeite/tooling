@@ -1,13 +1,13 @@
 # Tooling
 
-Este repositorio busca ser la base de trabajo para cualquier proyecto a futuro.
+Repositorio de utilidades de uso diario.
 
 ## UPM
 
-Util Package Manager es un distribuidor de paquetes montado sobre npm que busca
-agregar además de los paquetes ya conocidos, la capacidad de distribuir servidores
-mcp, skills, documentos y ejecutables listos para usar, catalogados y versionados.
+Util Package Manager es un distribuidor de paquetes montado sobre npm. Instala recursos para Codex como servidores MCP, skills, documentos, binarios y hooks, además de poder ejecutar scripts post-install para completar la configuración local.
 
-En esta primera versión, upm publica sobre los directorios conocidos de codex
-pero las próximas versiones podrían introducir concepto de adaptadores a otros
-agentes.# tooling
+## Paquetes
+
+- `util-package-manager`: el CLI `@focus.matters/upm`.
+- `console_monitor`: monitor de comandos y servidor MCP.
+- `win-notifier`: servicio residente de notificaciones de Windows y hook Stop de Codex.

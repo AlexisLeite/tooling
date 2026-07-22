@@ -49,7 +49,12 @@ export async function updateCommand(config) {
     const previous = config.data.packages[update.name];
     const selection = normalizeSelection(previous.resources);
     const needsPackageFiles =
-      selection.commands.length > 0 || selection.skills.length > 0 || selection.manuals.length > 0;
+      selection.commands.length > 0
+      || selection.binaries.length > 0
+      || selection.skills.length > 0
+      || selection.manuals.length > 0
+      || selection.hooks.length > 0
+      || Object.keys(utilPackage.postInstall || {}).length > 0;
     if (needsPackageFiles) {
       const packageDir = storePackageDir(update.name, update.latestVersion);
       await downloadAndExtractPackage(pkg, packageDir);

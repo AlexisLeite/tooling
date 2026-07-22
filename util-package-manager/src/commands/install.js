@@ -32,7 +32,12 @@ export async function installCommand(config, name) {
   const diff = diffSelections(previousSelection, selection);
 
   const needsPackageFiles =
-    selection.commands.length > 0 || selection.skills.length > 0 || selection.manuals.length > 0;
+    selection.commands.length > 0
+    || selection.binaries.length > 0
+    || selection.skills.length > 0
+    || selection.manuals.length > 0
+    || selection.hooks.length > 0
+    || Object.keys(utilPackage.postInstall || {}).length > 0;
   if (needsPackageFiles) {
     const packageDir = storePackageDir(name, version);
     await downloadAndExtractPackage(pkg, packageDir);

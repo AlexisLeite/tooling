@@ -1,15 +1,18 @@
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { resolve, dirname, join } from "node:path";
+import { spawn } from "node:child_process";
+import { resolve, dirname, join, basename } from "node:path";
 import { UPM_STORE_DIR } from "./constants.js";
 
-export const RESOURCE_TYPES = ["commands", "mcpServers", "skills", "manuals"];
+export const RESOURCE_TYPES = ["commands", "binaries", "mcpServers", "skills", "manuals", "hooks"];
 
 export function emptySelection() {
   return {
     commands: [],
+    binaries: [],
     mcpServers: [],
     skills: [],
-    manuals: []
+    manuals: [],
+    hooks: []
   };
 }
 
@@ -22,7 +25,8 @@ export function availableResources(utilPackage) {
 }
 
 export function hasAnyResource(utilPackage) {
-  return RESOURCE_TYPES.some((type) => Object.keys(utilPackage?.[type] || {}).length > 0);
+  return RESOURCE_TYPES.some((type) => Object.keys(utilPackage?.[type] || {}).length > 0)
+    || Object.keys(utilPackage?.postInstall || {}).length > 0;
 }
 
 export function storePackageDir(packageName, version, cwd = process.cwd()) {
@@ -56,6 +60,27 @@ export async function installCommands({ packageName, version, selected, utilPack
 
   config.data.paths ??= {};
   config.data.paths.commands = binDir;
+  return added;
+}
+
+export async function installBinaries({ packageName, version, selected, utilPackage, config }) {
+  const added = [];
+  const packageDir = storePackageDir(packageName, version);
+  const binDir = installedCommandDir();
+  await mkdir(binDir, { recursive: true });
+
+  for (const name of selected.binaries || []) {
+    const definition = utilPackage.binaries?.[name];
+    if (!definition?.path) continue;
+
+    const source = resolve(packageDir, definition.path);
+    const target = resolve(binDir, definition.fileName || basename(definition.path));
+    await cp(source, target, { force: true });
+    added.push({ type: "binary", name, path: target });
+  }
+
+  config.data.paths ??= {};
+  config.data.paths.binaries = binDir;
   return added;
 }
 
@@ -153,21 +178,129 @@ export async function installManuals({ packageName, version, selected, utilPacka
   return added;
 }
 
+export async function installHooks({ packageName, version, selected, utilPackage, config }) {
+  const added = [];
+  const packageDir = storePackageDir(packageName, version);
+  const codexRoot = dirname(config.data.configTomlPath);
+  const hooksDirectory = resolve(codexRoot, "hooks");
+  const hooksConfigPath = resolve(codexRoot, "hooks.json");
+  let hooksConfig = null;
+
+  for (const name of selected.hooks || []) {
+    const definition = utilPackage.hooks?.[name];
+    if (!definition?.path || !definition?.event) continue;
+
+    const target = resolve(hooksDirectory, definition.fileName || basename(definition.path));
+    await mkdir(dirname(target), { recursive: true });
+    await cp(resolve(packageDir, definition.path), target, { force: true });
+
+    hooksConfig ??= await readHooksConfig(hooksConfigPath);
+    const handler = hookHandler(definition, target);
+    const groups = hooksConfig.hooks[definition.event] ?? [];
+    if (!groups.some((group) => (group.hooks || []).some((current) => sameHookHandler(current, handler)))) {
+      groups.push({ hooks: [handler] });
+      hooksConfig.hooks[definition.event] = groups;
+    }
+    added.push({ type: "hook", name, path: target });
+  }
+
+  if (hooksConfig) {
+    await writeFile(hooksConfigPath, `${JSON.stringify(hooksConfig, null, 2)}\n`, "utf8");
+  }
+  return added;
+}
+
+async function readHooksConfig(hooksConfigPath) {
+  try {
+    const parsed = JSON.parse(await readFile(hooksConfigPath, "utf8"));
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("hooks.json must contain a JSON object.");
+    }
+    parsed.hooks ??= {};
+    return parsed;
+  } catch (error) {
+    if (error?.code === "ENOENT") return { description: "Hooks installed by UPM.", hooks: {} };
+    throw error;
+  }
+}
+
+function hookHandler(definition, target) {
+  const replacePath = (value) => value?.replaceAll("{hookPath}", target);
+  const handler = {
+    type: "command",
+    command: replacePath(definition.command) || `powershell.exe -NoProfile -ExecutionPolicy Bypass -File "${target}"`
+  };
+  const commandWindows = replacePath(definition.commandWindows);
+  if (commandWindows) handler.commandWindows = commandWindows;
+  if (definition.timeout) handler.timeout = definition.timeout;
+  if (definition.statusMessage) handler.statusMessage = definition.statusMessage;
+  return handler;
+}
+
+function sameHookHandler(current, candidate) {
+  return current?.type === candidate.type
+    && current.command === candidate.command
+    && (current.commandWindows || null) === (candidate.commandWindows || null);
+}
+
+export async function runPostInstallScripts({ packageName, version, utilPackage, config }) {
+  const packageDir = storePackageDir(packageName, version);
+  const scripts = Object.entries(utilPackage.postInstall || {});
+  const added = [];
+
+  for (const [name, definition] of scripts) {
+    if (!definition?.path || (definition.platform && definition.platform !== process.platform)) continue;
+    const scriptPath = resolve(packageDir, definition.path);
+    const command = definition.command || (definition.shell === "powershell" ? "powershell.exe" : "node");
+    const args = definition.command
+      ? (definition.args || [])
+      : definition.shell === "powershell"
+        ? ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", scriptPath, ...(definition.args || [])]
+        : [scriptPath, ...(definition.args || [])];
+    await run(command, args, {
+      ...process.env,
+      UPM_PACKAGE_DIR: packageDir,
+      UPM_PACKAGE_NAME: packageName,
+      UPM_PACKAGE_VERSION: version,
+      UPM_CODEX_HOME: dirname(config.data.configTomlPath)
+    });
+    added.push({ type: "post-install", name, path: scriptPath });
+  }
+
+  return added;
+}
+
+function run(command, args, env) {
+  return new Promise((resolveRun, reject) => {
+    const child = spawn(command, args, { env, stdio: "inherit" });
+    child.once("error", reject);
+    child.once("exit", (code) => {
+      if (code === 0) resolveRun();
+      else reject(new Error(`${command} exited with code ${code}.`));
+    });
+  });
+}
+
 export async function installSelectedResources(args) {
   const added = [];
   added.push(...await installCommands(args));
+  added.push(...await installBinaries(args));
   added.push(...await installMcpServers(args));
   added.push(...await installSkills(args));
   added.push(...await installManuals(args));
+  added.push(...await installHooks(args));
+  added.push(...await runPostInstallScripts(args));
   return added;
 }
 
 export async function removeSelectedResources({ selected, utilPackage, config }) {
   const removed = [];
   removed.push(...await removeCommands({ selected }));
+  removed.push(...await removeBinaries({ selected, utilPackage }));
   removed.push(...await removeMcpServers({ selected, config }));
   removed.push(...await removeSkills({ selected, config }));
   removed.push(...await removeManuals({ selected, utilPackage }));
+  removed.push(...await removeHooks({ selected, utilPackage, config }));
   return removed;
 }
 
@@ -179,6 +312,21 @@ async function removeCommands({ selected }) {
     const shimPath = resolve(binDir, process.platform === "win32" ? `${name}.cmd` : name);
     await rm(shimPath, { force: true });
     removed.push({ type: "command", name, path: shimPath });
+  }
+
+  return removed;
+}
+
+async function removeBinaries({ selected, utilPackage }) {
+  const removed = [];
+  const binDir = installedCommandDir();
+
+  for (const name of selected.binaries || []) {
+    const definition = utilPackage.binaries?.[name];
+    if (!definition?.path) continue;
+    const target = resolve(binDir, definition.fileName || basename(definition.path));
+    await rm(target, { force: true });
+    removed.push({ type: "binary", name, path: target });
   }
 
   return removed;
@@ -232,6 +380,34 @@ async function removeManuals({ selected, utilPackage }) {
     removed.push({ type: "manual", name, path: target });
   }
 
+  return removed;
+}
+
+async function removeHooks({ selected, utilPackage, config }) {
+  const removed = [];
+  const codexRoot = dirname(config.data.configTomlPath);
+  const hooksConfigPath = resolve(codexRoot, "hooks.json");
+  let hooksConfig = null;
+
+  for (const name of selected.hooks || []) {
+    const definition = utilPackage.hooks?.[name];
+    if (!definition?.path || !definition?.event) continue;
+
+    const target = resolve(codexRoot, "hooks", definition.fileName || basename(definition.path));
+    await rm(target, { force: true });
+    hooksConfig ??= await readHooksConfig(hooksConfigPath);
+    const handler = hookHandler(definition, target);
+    const groups = hooksConfig.hooks[definition.event] || [];
+    hooksConfig.hooks[definition.event] = groups
+      .map((group) => ({ ...group, hooks: (group.hooks || []).filter((current) => !sameHookHandler(current, handler)) }))
+      .filter((group) => group.hooks.length > 0);
+    if (hooksConfig.hooks[definition.event].length === 0) delete hooksConfig.hooks[definition.event];
+    removed.push({ type: "hook", name, path: target });
+  }
+
+  if (hooksConfig) {
+    await writeFile(hooksConfigPath, `${JSON.stringify(hooksConfig, null, 2)}\n`, "utf8");
+  }
   return removed;
 }
 
