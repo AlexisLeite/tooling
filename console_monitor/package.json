@@ -1,12 +1,12 @@
 {
   "name": "@focus.matters/console-monitor",
-  "version": "0.1.15",
+  "version": "0.1.17",
   "description": "Run and monitor long-lived console commands from agents over TCP and MCP.",
   "type": "module",
   "bin": {
-    "cm": "./bin/cm.js",
-    "console-monitor": "./bin/cm.js",
-    "console-monitor-mcp": "./bin/console-monitor-mcp.js"
+    "cm": "bin/cm.js",
+    "console-monitor": "bin/cm.js",
+    "console-monitor-mcp": "bin/console-monitor-mcp.js"
   },
   "files": [
     "bin",

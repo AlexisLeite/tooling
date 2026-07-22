@@ -1,6 +1,6 @@
 {
   "name": "@focus.matters/win-notifier",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Windows tray notification service with Codex completion notifications.",
   "files": [
     "bin",

@@ -1,10 +1,10 @@
 {
   "name": "@focus.matters/upm",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Install and update declared agent resources from npm packages.",
   "type": "module",
   "bin": {
-    "upm": "./bin/upm.js"
+    "upm": "bin/upm.js"
   },
   "files": [
     "bin",
